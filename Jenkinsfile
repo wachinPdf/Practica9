@@ -1,15 +1,12 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:20' // O la versión que uses
-        }
-    }
+    agent any
 
     stages {
         stage('Update Dependencies') {
             steps {
                 script {
                     echo 'Updating dependencies...'
+                    sh 'npm install npm-check-updates'
                     sh 'npx npm-check-updates -u'
                     sh 'npm install --legacy-peer-deps'
                 }
