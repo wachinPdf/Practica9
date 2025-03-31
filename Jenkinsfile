@@ -1,33 +1,29 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:16-alpine'  // Contenedor ligero con Node.js
-            args '-u root'  // Evita problemas de permisos
-        }
-    }
+    agent any  // Usa cualquier agente disponible
     stages {
         stage('Checkout') {
             steps {
-                checkout scm  // Clona el repositorio
+                checkout scm
             }
         }
-        stage('Install Dependencies') {
+        stage('Build and Test') {
             steps {
-                sh 'npm install'
-            }
-        }
-        stage('Run Tests') {
-            steps {
-                sh 'npm test'  // Ejecuta pruebas (Jest/Enzyme)
+                script {
+                    // Ejecuta en un contenedor Docker ad-hoc
+                    docker.image('node:16-alpine').inside('-u root') {
+                        sh 'npm install'
+                        sh 'npm test'
+                    }
+                }
             }
             post {
                 always {
-                    junit 'reports/**/*.xml'  // Guarda reportes de pruebas
+                    junit 'reports/**/*.xml'  // Reporte de pruebas
                 }
             }
         }
     }
     triggers {
-        pollSCM('H/5 * * * *')  // Verifica cambios cada 5 min (alternativa a webhooks)
+        pollSCM('H/5 * * * *')  // Verifica cambios cada 5 min
     }
 }
