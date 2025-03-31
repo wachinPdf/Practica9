@@ -1,43 +1,33 @@
 pipeline {
-    agent any
-
+    agent {
+        docker {
+            image 'node:16-alpine'  // Contenedor ligero con Node.js
+            args '-u root'  // Evita problemas de permisos
+        }
+    }
     stages {
-        stage('Update Dependencies') {
+        stage('Checkout') {
             steps {
-                script {
-                    echo 'Updating dependencies...'
-                    sh 'npm install npm-check-updates --legacy-peer-deps'
-                    sh 'npx npm-check-updates -u'
-                    sh 'npm install --legacy-peer-deps'
-                }
+                checkout scm  // Clona el repositorio
             }
         }
-
-        stage('Build') {
+        stage('Install Dependencies') {
             steps {
-                script {
-                    echo 'Building the project...'
-                    sh 'npm install --only=dev --legacy-peer-deps'
-                }
+                sh 'npm install'
             }
         }
-
-        stage('Test') {
+        stage('Run Tests') {
             steps {
-                script {
-                    echo 'Running tests...'
-                    sh 'npm test'
+                sh 'npm test'  // Ejecuta pruebas (Jest/Enzyme)
+            }
+            post {
+                always {
+                    junit 'reports/**/*.xml'  // Guarda reportes de pruebas
                 }
             }
         }
     }
-
-    post {
-        success {
-            echo 'CI process completed successfully.'
-        }
-        failure {
-            echo 'CI process failed.'
-        }
+    triggers {
+        pollSCM('H/5 * * * *')  // Verifica cambios cada 5 min (alternativa a webhooks)
     }
 }
