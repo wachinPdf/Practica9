@@ -2,12 +2,22 @@ pipeline {
     agent any
 
     stages {
+        stage('Update Dependencies') {
+            steps {
+                script {
+                    echo 'Updating dependencies...'
+                    sh 'npm install -g npm-check-updates'
+                    sh 'npx npm-check-updates -u'
+                    sh 'npm install --legacy-peer-deps'
+                }
+            }
+        }
+
         stage('Build') {
             steps {
                 script {
                     echo 'Building the project...'
-                    sh 'npm cache clean --force'
-                    sh 'npm install --legacy-peer-deps'
+                    sh 'npm install --only=dev'
                 }
             }
         }
