@@ -6,7 +6,7 @@ pipeline {
             steps {
                 script {
                     echo 'Updating dependencies...'
-                    sh 'npm install npm-check-updates'
+                    sh 'npm install npm-check-updates --legacy-peer-deps'
                     sh 'npx npm-check-updates -u'
                     sh 'npm install --legacy-peer-deps'
                 }
@@ -17,7 +17,7 @@ pipeline {
             steps {
                 script {
                     echo 'Building the project...'
-                    sh 'npm install --only=dev'
+                    sh 'npm install --only=dev --legacy-peer-deps'
                 }
             }
         }
