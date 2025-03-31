@@ -6,7 +6,8 @@ pipeline {
             steps {
                 script {
                     echo 'Building the project...'
-                    sh 'npm install -dev'
+                    sh 'npm cache clean --force'
+                    sh 'npm install --legacy-peer-deps'
                 }
             }
         }
