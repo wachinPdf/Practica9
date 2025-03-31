@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                script {
+                    echo 'Building the project...'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    echo 'Running tests...'
+                }
+            }
+        }
+
+        stage('Deploy to Assignment Container') {
+            steps {
+                script {
+                    echo 'Deploying to the assignment container...'
+                    sh 'scp -r ./build user@assignment_container:/path/to/deployment'
+                }
+            }
+        }
+
+        stage('Deploy to Docker Container') {
+            steps {
+                script {
+                    sh 'docker build -t myapp .'
+                    sh 'docker run -d --name myapp_container myapp'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'CD process completed successfully.'
+        }
+        failure {
+            echo 'CD process failed.'
+        }
+    }
+}
