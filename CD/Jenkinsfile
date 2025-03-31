@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    triggers {
+        pollSCM('H/15 * * * *')
+    }
+
     stages {
         stage('Build') {
             steps {
@@ -30,6 +34,8 @@ pipeline {
         stage('Deploy to Docker Container') {
             steps {
                 script {
+                    echo 'Deploying to Docker container inside the assignment container...'
+
                     sh 'docker build -t myapp .'
                     sh 'docker run -d --name myapp_container myapp'
                 }
@@ -46,3 +52,4 @@ pipeline {
         }
     }
 }
+
