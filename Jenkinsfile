@@ -6,8 +6,8 @@ pipeline {
     }
 
     environment {
-        RUTA_ANALISIS = "JENKINS_HOME/workspace/folderName/subfolderName/projectNameFile"
-        IP_LOCAL = "127.0.0.1" // puedes cambiarla si tu contenedor usa otra IP
+        RUTA_ANALISIS = "C:/ProgramData/Jenkins/.jenkins/workspace/folderName/subfolderName/projectNameFile"
+        IP_LOCAL = "127.0.0.1"
     }
 
     stages {
@@ -16,13 +16,11 @@ pipeline {
                 script {
                     def timestamp = new Date().format("yyyyMMdd_HHmmss")
                     def filename = "versiones_${timestamp}.txt"
-                    writeFile file: filename, text: """
-JAVA VERSION:
-${sh(script: 'java -version 2>&1', returnStdout: true)}
-
-JENKINS VERSION:
-${sh(script: 'jenkins-cli version', returnStdout: true)}
-"""
+                    powershell """
+                        java -version 2>&1 | Out-File -FilePath ${filename} -Append
+                        echo '---' | Out-File -FilePath ${filename} -Append
+                        jenkins --version | Out-File -FilePath ${filename} -Append
+                    """
                 }
             }
         }
@@ -32,7 +30,7 @@ ${sh(script: 'jenkins-cli version', returnStdout: true)}
                 script {
                     def timestamp = new Date().format("yyyyMMdd_HHmmss")
                     def filename = "scan_${timestamp}.txt"
-                    sh "nmap ${env.IP_LOCAL} -p- > ${filename}"
+                    powershell "nmap ${env.IP_LOCAL} -p- | Out-File ${filename}"
                 }
             }
         }
@@ -42,17 +40,14 @@ ${sh(script: 'jenkins-cli version', returnStdout: true)}
                 script {
                     def timestamp = new Date().format("yyyyMMdd_HHmmss")
                     def filename = "sha256_${timestamp}.txt"
-                    sh "find ${env.RUTA_ANALISIS} -type f -exec sha256sum {} \\; > ${filename}"
+                    powershell "Get-ChildItem -Recurse '${env.RUTA_ANALISIS}' | Get-FileHash -Algorithm SHA256 | Out-File ${filename}"
                 }
             }
         }
 
         stage('Comparación (Manual o Automática)') {
             steps {
-                script {
-                    echo "Puedes comparar dos snapshots usando diff, fc o un script externo."
-                    echo "Ejemplo: diff sha256_20250407_141000.txt sha256_20250407_143000.txt"
-                }
+                echo "Puedes comparar los archivos generados manualmente con Notepad++, fc o un script PowerShell."
             }
         }
     }
