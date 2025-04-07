@@ -18,8 +18,7 @@ pipeline {
                     def filename = "versiones_${timestamp}.txt"
                     powershell """
                         java -version 2>&1 | Out-File -FilePath ${filename} -Append
-                        echo '---' | Out-File -FilePath ${filename} -Append
-                        jenkins --version | Out-File -FilePath ${filename} -Append
+                        echo 'Nota: Jenkins se ejecuta como servicio en Windows. Versión no disponible como comando.' | Out-File -FilePath ${filename} -Append
                     """
                 }
             }
