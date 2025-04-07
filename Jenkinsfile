@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     triggers {
-        pollSCM('H/15 * * * *')
+        pollSCM('H/15 * * * *') // Revisa cambios en el repo cada 15 minutos
     }
 
     environment {
-        RUTA_ANALISIS = "C:/ProgramData/Jenkins/.jenkins/workspace/folderName/subfolderName/projectNameFile"
+        RUTA_ANALISIS = "/var/jenkins_home/workspace/folderName/subfolderName/projectNameFile"
         IP_LOCAL = "127.0.0.1"
     }
 
@@ -16,9 +16,10 @@ pipeline {
                 script {
                     def timestamp = new Date().format("yyyyMMdd_HHmmss")
                     def filename = "versiones_${timestamp}.txt"
-                    powershell """
-                        java -version 2>&1 | Out-File -FilePath ${filename} -Append
-                        echo 'Nota: Jenkins se ejecuta como servicio en Windows. Versión no disponible como comando.' | Out-File -FilePath ${filename} -Append
+                    sh """
+                        java -version 2>&1 | tee ${filename}
+                        echo 'Jenkins ejecutándose dentro de contenedor Docker. Versión mostrada desde el WAR:' >> ${filename}
+                        cat /usr/share/jenkins/jenkins.war > /dev/null 2>&1 && echo 'Jenkins WAR presente' >> ${filename}
                     """
                 }
             }
@@ -29,7 +30,7 @@ pipeline {
                 script {
                     def timestamp = new Date().format("yyyyMMdd_HHmmss")
                     def filename = "scan_${timestamp}.txt"
-                    powershell "nmap ${env.IP_LOCAL} -p- | Out-File ${filename}"
+                    sh "nmap ${env.IP_LOCAL} -p- > ${filename}"
                 }
             }
         }
@@ -39,14 +40,14 @@ pipeline {
                 script {
                     def timestamp = new Date().format("yyyyMMdd_HHmmss")
                     def filename = "sha256_${timestamp}.txt"
-                    powershell "Get-ChildItem -Recurse '${env.RUTA_ANALISIS}' | Get-FileHash -Algorithm SHA256 | Out-File ${filename}"
+                    sh "find '${env.RUTA_ANALISIS}' -type f -exec sha256sum {} + > ${filename}"
                 }
             }
         }
 
         stage('Comparación (Manual o Automática)') {
             steps {
-                echo "Puedes comparar los archivos generados manualmente con Notepad++, fc o un script PowerShell."
+                echo "Puedes comparar los archivos generados con 'diff archivo1 archivo2' o con un script Bash."
             }
         }
     }
