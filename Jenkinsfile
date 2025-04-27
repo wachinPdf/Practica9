@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        RUTA_ANALISIS = "/var/jenkins_home/workspace/folderName/subfolderName/projectNameFile"
+        RUTA_ANALISIS = "/src"
         IP_LOCAL = "127.0.0.1"
     }
 
