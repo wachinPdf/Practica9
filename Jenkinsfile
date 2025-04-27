@@ -1,63 +1,37 @@
 pipeline {
     agent any
 
-    triggers {
-        pollSCM('H/15 * * * *') // Revisa cambios en el repo cada 15 minutos
-    }
-
-    environment {
-        RUTA_ANALISIS = "/var/jenkins_home/workspace/GPI2 Security pipeline"
-        IP_LOCAL = "127.0.0.1"
+    tools {
+        nodejs 'NodeJS' // Requiere que tengas NodeJS configurado en Jenkins
     }
 
     stages {
-        stage('Versiones') {
+        stage('Checkout') {
             steps {
-                script {
-                    def timestamp = new Date().format("yyyyMMdd_HHmmss")
-                    def filename = "versiones_${timestamp}.txt"
-                    sh """
-                        java -version 2>&1 | tee ${filename}
-                        echo 'Jenkins ejecutándose dentro de contenedor Docker. Versión mostrada desde el WAR:' >> ${filename}
-                        cat /usr/share/jenkins/jenkins.war > /dev/null 2>&1 && echo 'Jenkins WAR presente' >> ${filename}
-                    """
-                }
+                checkout scm
             }
         }
-
-        stage('Escaneo de Puertos') {
+        stage('Install Dependencies') {
             steps {
-                script {
-                    def timestamp = new Date().format("yyyyMMdd_HHmmss")
-                    def filename = "scan_${timestamp}.txt"
-                    sh "nmap ${env.IP_LOCAL} -p- > ${filename}"
-                }
+                sh 'npm install'
             }
         }
-
-        stage('SHA-256 de Ficheros') {
+        stage('Run Tests with Coverage') {
             steps {
-                script {
-                    def timestamp = new Date().format("yyyyMMdd_HHmmss")
-                    def filename = "sha256_${timestamp}.txt"
-                    sh "find '${env.RUTA_ANALISIS}' -type f -exec sha256sum {} + > ${filename}"
-                }
+                sh 'npm run test -- --coverage --watchAll=false'
             }
         }
-
-        stage('Comparación (Manual o Automática)') {
+        stage('Publish Coverage Report') {
             steps {
-                echo "Puedes comparar los archivos generados con 'diff archivo1 archivo2' o con un script Bash."
+                publishHTML([
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'coverage/lcov-report',
+                    reportFiles: 'index.html',
+                    reportName: 'Coverage Report'
+                ])
             }
-        }
-    }
-
-    post {
-        success {
-            echo 'Análisis de seguridad finalizado con éxito.'
-        }
-        failure {
-            echo 'El análisis de seguridad ha fallado.'
         }
     }
 }
