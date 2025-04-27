@@ -1,37 +1,63 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs 'NodeJS' // Requiere que tengas NodeJS configurado en Jenkins
+    triggers {
+        pollSCM('H/15 * * * *') // Revisa cambios en el repo cada 15 minutos
+    }
+
+    environment {
+        RUTA_ANALISIS = "/var/jenkins_home/workspace/folderName/subfolderName/projectNameFile"
+        IP_LOCAL = "127.0.0.1"
     }
 
     stages {
-        stage('Checkout') {
+        stage('Versiones') {
             steps {
-                checkout scm
+                script {
+                    def timestamp = new Date().format("yyyyMMdd_HHmmss")
+                    def filename = "versiones_${timestamp}.txt"
+                    sh """
+                        java -version 2>&1 | tee ${filename}
+                        echo 'Jenkins ejecutándose dentro de contenedor Docker. Versión mostrada desde el WAR:' >> ${filename}
+                        cat /usr/share/jenkins/jenkins.war > /dev/null 2>&1 && echo 'Jenkins WAR presente' >> ${filename}
+                    """
+                }
             }
         }
-        stage('Install Dependencies') {
+
+        stage('Escaneo de Puertos') {
             steps {
-                sh 'npm install'
+                script {
+                    def timestamp = new Date().format("yyyyMMdd_HHmmss")
+                    def filename = "scan_${timestamp}.txt"
+                    sh "nmap ${env.IP_LOCAL} -p- > ${filename}"
+                }
             }
         }
-        stage('Run Tests with Coverage') {
+
+        stage('SHA-256 de Ficheros') {
             steps {
-                sh 'npm run test -- --coverage --watchAll=false'
+                script {
+                    def timestamp = new Date().format("yyyyMMdd_HHmmss")
+                    def filename = "sha256_${timestamp}.txt"
+                    sh "find '${env.RUTA_ANALISIS}' -type f -exec sha256sum {} + > ${filename}"
+                }
             }
         }
-        stage('Publish Coverage Report') {
+
+        stage('Comparación (Manual o Automática)') {
             steps {
-                publishHTML([
-                    allowMissing: false,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: 'coverage/lcov-report',
-                    reportFiles: 'index.html',
-                    reportName: 'Coverage Report'
-                ])
+                echo "Puedes comparar los archivos generados con 'diff archivo1 archivo2' o con un script Bash."
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'Análisis de seguridad finalizado con éxito.'
+        }
+        failure {
+            echo 'El análisis de seguridad ha fallado.'
         }
     }
 }
