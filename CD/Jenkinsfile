@@ -22,6 +22,19 @@ pipeline {
             }
         }
 
+        
+        stage('Integrity Check (SHA-256)') {
+            steps {
+                script {
+                    def timestamp = new Date().format("yyyyMMdd_HHmmss")
+                    def filename = "sha256_${timestamp}.txt"
+                    sh "find . -type f -exec sha256sum {} + > ${filename}"
+                    echo "SHA-256 hashes generated and saved in ${filename}"
+                }
+            }
+        }
+  
+
         stage('Deploy to Assignment Container') {
             steps {
                 script {
@@ -35,7 +48,6 @@ pipeline {
             steps {
                 script {
                     echo 'Deploying to Docker container inside the assignment container...'
-
                     sh 'docker build -t myapp .'
                     sh 'docker run -d --name myapp_container myapp'
                 }
@@ -52,4 +64,3 @@ pipeline {
         }
     }
 }
-
