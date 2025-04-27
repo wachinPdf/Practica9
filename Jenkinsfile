@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        RUTA_ANALISIS = "/src"
+        RUTA_ANALISIS = "./src"
         IP_LOCAL = "127.0.0.1"
     }
 
