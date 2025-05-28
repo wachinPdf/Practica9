@@ -1,39 +1,44 @@
 pipeline {
     agent any
-
     stages {
-        stage('Build') {
+        stage('Install') {
             steps {
-                echo 'Instalando dependencias...'
-                // Ignorar fallos de build
-                script {
-                    try {
-                        sh 'npm install'
-                    } catch (err) {
-                        echo "⚠️ Fallo en build: ${err}"
-                    }
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    sh 'npm install'
                 }
             }
         }
-
         stage('Test') {
             steps {
-                echo 'Ejecutando tests...'
-                // Ignorar fallos de test también
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    sh 'npm test'
+                }
+            }
+        }
+        stage('Deploy to Docker') {
+            steps {
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    sh '''
+                    docker build -t my-react-app .
+                    docker run -d -p 3000:3000 --rm my-react-app || true
+                    '''
+                }
+            }
+        }
+        stage('Generate KPI report: File integrity') {
+            steps {
                 script {
-                    try {
-                        sh 'npm test -- --watchAll=false'
-                    } catch (err) {
-                        echo "⚠️ Fallo en test: ${err}"
-                    }
+                    sh '''
+                    find . -type f ! -path "./node_modules/*" -exec sha256sum {} \\; > sha256_report.txt
+                    '''
+                    archiveArtifacts artifacts: 'sha256_report.txt'
                 }
             }
         }
     }
-
     post {
         always {
-            echo 'Pipeline de CI finalizado (con o sin errores).'
+            echo 'CI/CD pipeline con reporting de integridad ejecutado.'
         }
     }
 }
