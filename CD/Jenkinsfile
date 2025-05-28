@@ -1,0 +1,66 @@
+pipeline {
+    agent any
+
+    triggers {
+        pollSCM('H/15 * * * *')
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                script {
+                    echo 'Building the project...'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    echo 'Running tests...'
+                }
+            }
+        }
+
+        
+        stage('Integrity Check (SHA-256)') {
+            steps {
+                script {
+                    def timestamp = new Date().format("yyyyMMdd_HHmmss")
+                    def filename = "sha256_${timestamp}.txt"
+                    sh "find . -type f -exec sha256sum {} + > ${filename}"
+                    echo "SHA-256 hashes generated and saved in ${filename}"
+                }
+            }
+        }
+  
+
+        stage('Deploy to Assignment Container') {
+            steps {
+                script {
+                    echo 'Deploying to the assignment container...'
+                    sh 'scp -r ./build user@assignment_container:/path/to/deployment'
+                }
+            }
+        }
+
+        stage('Deploy to Docker Container') {
+            steps {
+                script {
+                    echo 'Deploying to Docker container inside the assignment container...'
+                    sh 'docker build -t myapp .'
+                    sh 'docker run -d --name myapp_container myapp'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'CD process completed successfully.'
+        }
+        failure {
+            echo 'CD process failed.'
+        }
+    }
+}
